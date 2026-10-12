@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>AI Operation Wireframe</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --paper: #f6f4ee;
+        --paper-2: #efece3;
+        --ink: #1c2430;
+        --ink-soft: #4a5568;
+        --line: #1c2430;
+        --grid: rgba(28, 36, 48, 0.07);
+        --accent: #d9481f;
+        --accent-soft: rgba(217, 72, 31, 0.1);
+        --blue: #1d5fa8;
+        --blue-soft: rgba(29, 95, 168, 0.09);
+        --green: #1e7a46;
+        --green-soft: rgba(30, 122, 70, 0.09);
+        --node-bg: #fbfaf6;
+        --chip-bg: #1c2430;
+        --chip-fg: #f6f4ee;
+        --shadow: rgba(28, 36, 48, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #0d1b29;
+          --paper-2: #0a1622;
+          --ink: #dcebf7;
+          --ink-soft: #93a9bd;
+          --line: #7fb2dd;
+          --grid: rgba(127, 178, 221, 0.09);
+          --accent: #ff7a45;
+          --accent-soft: rgba(255, 122, 69, 0.13);
+          --blue: #6db3f2;
+          --blue-soft: rgba(109, 179, 242, 0.12);
+          --green: #5fce8f;
+          --green-soft: rgba(95, 206, 143, 0.12);
+          --node-bg: #122636;
+          --chip-bg: #dcebf7;
+          --chip-fg: #0d1b29;
+          --shadow: rgba(0, 0, 0, 0.45);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background:
+          linear-gradient(var(--grid) 1px, transparent 1px),
+          linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+          var(--paper);
+        background-size: 28px 28px, 28px 28px, auto;
+        color: var(--ink);
+        font-family: "Archivo", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+      .wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px 72px; }
+
+      /* ---------- header ---------- */
+      header { padding: 44px 0 8px; }
+      .fig-ref {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--ink-soft);
+        display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+      }
+      .fig-ref .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+      h1 {
+        font-size: clamp(34px, 6vw, 58px);
+        line-height: 1.02; font-weight: 800; letter-spacing: -0.02em;
+        margin: 14px 0 12px; max-width: 15ch;
+      }
+      h1 .hl { color: var(--accent); }
+      .lede { font-size: clamp(16px, 2.4vw, 19px); line-height: 1.55; color: var(--ink-soft); max-width: 62ch; margin: 0; }
+      .lede strong { color: var(--ink); }
+
+      /* ---------- map ---------- */
+      .map-frame {
+        margin-top: 34px;
+        border: 2px solid var(--line);
+        background: var(--paper-2);
+        box-shadow: 6px 6px 0 var(--shadow);
+        position: relative;
+      }
+      .map-frame::before {
+        content: "FIG. 1 — THE OPERATION, TOP VIEW";
+        position: absolute; top: -11px; left: 16px;
+        background: var(--paper); padding: 0 8px;
+        font-family: "IBM Plex Mono", monospace; font-size: 11px;
+        letter-spacing: 0.16em; color: var(--ink-soft);
+      }
+      .map {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        grid-template-areas: "agents hub systems";
+        gap: 18px 30px;
+        padding: 38px 26px 10px;
+        align-items: center;
+      }
+      #wires { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+      #wires path { fill: none; stroke: var(--ink-soft); stroke-width: 1.4; stroke-dasharray: 5 5; opacity: 0.55; transition: opacity .2s, stroke .2s; }
+      #wires path.hot { stroke: var(--accent); opacity: 1; stroke-width: 2; }
+      .col { display: flex; flex-direction: column; gap: 12px; z-index: 1; }
+      .col.agents { grid-area: agents; }
+      .col.systems { grid-area: systems; }
+      .col-label {
+        font-family: "IBM Plex Mono", monospace; font-size: 11px;
+        letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft);
+        margin-bottom: 2px;
+      }
+      .hub-cell { grid-area: hub; z-index: 1; display: flex; align-items: center; justify-content: center; }
+
+      .node {
+        appearance: none; text-align: left; cursor: pointer; width: 100%;
+        background: var(--node-bg); color: var(--ink);
+        border: 1.5px solid var(--line);
+        padding: 11px 13px 10px;
+        font-family: inherit;
+        box-shadow: 3px 3px 0 var(--shadow);
+        transition: transform .15s, box-shadow .15s, border-color .15s, background .15s;
+        position: relative;
+      }
+      .node:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--shadow); }
+      .node:focus-visible { outline: 2px dashed var(--accent); outline-offset: 3px; }
+      .node[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: 3px 3px 0 var(--accent); }
+      .node .n-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+      .node .n-name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+      .node .n-tag {
+        font-family: "IBM Plex Mono", monospace; font-size: 10px;
+        letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); white-space: nowrap;
+      }
+      .node .n-sub { font-size: 13px; line-height: 1.4; color: var(--ink-soft); margin-top: 3px; }
+      .node .n-status {
+        display: inline-block; margin-top: 7px;
+        font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.1em;
+        padding: 2px 7px; border: 1px solid var(--line);
+      }
+      .node .n-status.live { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+      .node .n-status.free { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+
+      .hub-node {
+        width: 218px; height: 218px; border-radius: 50%;
+        border: 2.5px solid var(--accent);
+        background: var(--node-bg);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-align: center; padding: 24px; cursor: pointer;
+        box-shadow: 0 0 0 7px var(--paper-2), 0 0 0 9px var(--accent), 5px 5px 0 var(--shadow);
+        font-family: inherit; color: var(--ink);
+        transition: transform .15s, background .15s;
+      }
+      .hub-node:hover { transform: scale(1.02); }
+      .hub-node:focus-visible { outline: 2px dashed var(--accent); outline-offset: 5px; }
+      .hub-node[aria-pressed="true"] { background: var(--accent-soft); }
+      .hub-node .h-name { font-size: 27px; font-weight: 800; letter-spacing: 0.04em; }
+      .hub-node .h-role { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); margin-top: 4px; }
+      .hub-node .h-sub { font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; margin-top: 8px; }
+
+      .rail {
+        grid-column: 1 / -1;
+        border-top: 1.5px dashed var(--line);
+        margin: 16px 26px 0; padding: 18px 0 26px;
+        position: relative; z-index: 1;
+      }
+      .rail-label {
+        font-family: "IBM Plex Mono", monospace; font-size: 11px;
+        letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px;
+      }
+      .rail-nodes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+      .rail .node .n-name { font-size: 14.5px; }
+      .rail .node .n-when { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+
+      .hint {
+        font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-soft);
+        margin: 14px 2px 0; display: flex; align-items: center; gap: 8px;
+      }
+      .hint::before { content: "→"; color: var(--accent); font-weight: 600; }
+
+      /* ---------- spec sheet ---------- */
+      .spec {
+        margin-top: 22px; border: 2px solid var(--line); background: var(--node-bg);
+        box-shadow: 6px 6px 0 var(--shadow); padding: 24px 26px 22px; position: relative;
+      }
+      .spec::before {
+        content: "SPEC SHEET";
+        position: absolute; top: -11px; left: 16px; background: var(--paper); padding: 0 8px;
+        font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.16em; color: var(--ink-soft);
+      }
+      .spec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; border-bottom: 1.5px dashed var(--line); padding-bottom: 12px; }
+      .spec-title { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+      .spec-tag { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+      .spec-role { font-size: 16px; line-height: 1.55; margin: 14px 0 4px; max-width: 78ch; }
+      .spec-cols { display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px 36px; margin-top: 10px; }
+      .spec h4 { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); margin: 10px 0 8px; }
+      .spec ul { margin: 0; padding: 0; list-style: none; }
+      .spec ul li { font-size: 14.5px; line-height: 1.5; padding: 5px 0 5px 18px; position: relative; border-bottom: 1px solid var(--grid); }
+      .spec ul li::before { content: "▪"; position: absolute; left: 0; color: var(--accent); font-size: 11px; top: 8px; }
+      .spec .io { font-size: 14px; line-height: 1.6; }
+      .spec .io b { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); display: block; margin-top: 8px; }
+
+      /* ---------- sections ---------- */
+      section.block { margin-top: 58px; }
+      .sec-head { display: flex; align-items: baseline; gap: 14px; border-bottom: 2px solid var(--line); padding-bottom: 10px; }
+      .sec-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+      h2 { font-size: clamp(24px, 4vw, 32px); font-weight: 800; letter-spacing: -0.015em; margin: 0; }
+      .sec-note { color: var(--ink-soft); font-size: 15.5px; line-height: 1.55; max-width: 70ch; margin: 12px 0 0; }
+
+      .journey { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin-top: 24px; }
+      .step { border: 1.5px solid var(--line); background: var(--node-bg); padding: 14px 13px 12px; position: relative; margin-left: -1.5px; }
+      .step:first-child { margin-left: 0; }
+      .step:not(:last-child)::after {
+        content: "→"; position: absolute; right: -11px; top: 12px; z-index: 2;
+        background: var(--paper); color: var(--accent); font-weight: 700; font-size: 15px; padding: 0 2px;
+      }
+      .step .s-num { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--accent); font-weight: 600; letter-spacing: 0.1em; }
+      .step .s-name { font-weight: 700; font-size: 14.5px; margin-top: 5px; line-height: 1.3; }
+      .step .s-desc { font-size: 12.5px; color: var(--ink-soft); line-height: 1.45; margin-top: 4px; }
+
+      .companies { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 24px; }
+      .company { border: 2px solid var(--line); background: var(--node-bg); padding: 20px 20px 16px; box-shadow: 4px 4px 0 var(--shadow); }
+      .company .c-tag { font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.1em; padding: 3px 8px; background: var(--chip-bg); color: var(--chip-fg); display: inline-block; }
+      .company h3 { font-size: 21px; font-weight: 800; margin: 12px 0 2px; letter-spacing: -0.01em; }
+      .company .c-what { font-size: 13px; color: var(--ink-soft); font-family: "IBM Plex Mono", monospace; letter-spacing: 0.04em; }
+      .company ul { margin: 12px 0 0; padding: 0; list-style: none; }
+      .company ul li { font-size: 14px; line-height: 1.5; padding: 6px 0; border-top: 1px dashed var(--grid); }
+      .company ul li:first-child { border-top: none; }
+      .company .price { font-weight: 700; color: var(--accent); }
+
+      .pipe { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin-top: 22px; }
+      .stage {
+        border: 1.5px solid var(--line); background: var(--node-bg); padding: 10px 14px;
+        font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 8px;
+      }
+      .stage .st-n { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--accent); }
+      .pipe .arr { align-self: center; color: var(--accent); font-weight: 700; }
+      .stage.dead { border-style: dashed; color: var(--ink-soft); font-weight: 600; }
+      .pipe-names { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+      .pipe-names span { font-family: "IBM Plex Mono", monospace; font-size: 12px; border: 1px solid var(--line); padding: 4px 10px; background: var(--paper-2); }
+
+      .sched { margin-top: 22px; border: 2px solid var(--line); background: var(--node-bg); box-shadow: 4px 4px 0 var(--shadow); }
+      .sched-row { display: grid; grid-template-columns: 170px 1fr 130px; gap: 14px; padding: 13px 18px; border-bottom: 1px dashed var(--grid); align-items: baseline; }
+      .sched-row:last-child { border-bottom: none; }
+      .sched-row .when { font-family: "IBM Plex Mono", monospace; font-size: 13px; font-weight: 600; color: var(--accent); }
+      .sched-row .what b { display: block; font-size: 15px; }
+      .sched-row .what span { font-size: 13.5px; color: var(--ink-soft); line-height: 1.45; }
+      .sched-row .out { font-family: "IBM Plex Mono", monospace; font-size: 11.5px; text-align: right; color: var(--ink-soft); }
+
+      .tags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; align-items: center; }
+      .tag-group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .tag-group .tg-label { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-soft); margin-right: 2px; }
+      .tag-chip { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; border: 1.5px solid var(--line); padding: 4px 10px; background: var(--node-bg); }
+      .tag-plus { color: var(--accent); font-weight: 700; font-size: 17px; }
+
+      footer { margin-top: 64px; border-top: 2px solid var(--line); padding-top: 16px; display: flex; flex-wrap: wrap; gap: 6px 22px; justify-content: space-between; }
+      footer p { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--ink-soft); margin: 0; line-height: 1.6; }
+
+      /* ---------- responsive ---------- */
+      @media (max-width: 1020px) {
+        .rail-nodes { grid-template-columns: repeat(3, 1fr); }
+        .journey { grid-template-columns: repeat(3, 1fr); row-gap: 14px; }
+        .step { margin-left: 0; }
+        .step:not(:last-child)::after { display: none; }
+        .companies { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 820px) {
+        .map { grid-template-columns: 1fr; grid-template-areas: "hub" "agents" "systems"; padding: 30px 18px 6px; }
+        #wires { display: none; }
+        .hub-cell { padding: 6px 0 10px; }
+        .rail { margin: 14px 18px 0; }
+        .rail-nodes { grid-template-columns: 1fr 1fr; }
+        .spec-cols { grid-template-columns: 1fr; }
+        .sched-row { grid-template-columns: 1fr; gap: 3px; }
+        .sched-row .out { text-align: left; }
+      }
+      @media (max-width: 560px) {
+        .journey { grid-template-columns: 1fr 1fr; }
+        .rail-nodes { grid-template-columns: 1fr; }
+        .hub-node { width: 196px; height: 196px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; }
+        html { scroll-behavior: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="fig-ref"><span class="dot"></span><span>Sheet 01 · Redrawn from the FigJam board “Joes AI Operation”</span><span>Rev. Oct 12, 2026</span></div>
+        <h1>Joe’s AI operation, <span class="hl">wired.</span></h1>
+        <p class="lede">One hub, five outside AIs, three companies, and a rail of automations that run while you sleep. <strong>Tap any box</strong> to read its spec — how it connects, what it eats, what it produces.</p>
+      </header>
+
+      <div class="map-frame">
+        <div class="map" id="map">
+          <svg id="wires" aria-hidden="true"></svg>
+
+          <div class="col agents">
+            <div class="col-label">— Outside agents</div>
+            <button class="node" data-node="chatgpt" aria-pressed="false">
+              <span class="n-top"><span class="n-name">ChatGPT</span><span class="n-tag">Lead scout</span></span>
+              <span class="n-sub">Two scheduled tasks hunt leads — one for Signature Air, one for DCB — and email the haul to Gmail.</span>
+              <span class="n-status live">● Live</span>
+            </button>
+            <button class="node" data-node="claudeapp" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Claude (app)</span><span class="n-tag">Research</span></span>
+              <span class="n-sub">Scheduled tasks run research and email results into the same inbox.</span>
+              <span class="n-status live">● Live</span>
+            </button>
+            <button class="node" data-node="grok" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Grok</span><span class="n-tag">Real-time</span></span>
+              <span class="n-sub">Watches X and live chatter — the early-warning sensor of the stack.</span>
+              <span class="n-status free">Free tier</span>
+            </button>
+            <button class="node" data-node="perplexity" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Perplexity</span><span class="n-tag">Deep research</span></span>
+              <span class="n-sub">Cited deep dives on prospects and competitors before outreach goes out.</span>
+              <span class="n-status free">Free tier</span>
+            </button>
+            <button class="node" data-node="antigravity" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Antigravity</span><span class="n-tag">Build crew</span></span>
+              <span class="n-sub">Parallel build agents on Joe’s machine. Builds client sites from specs the hub writes.</span>
+              <span class="n-status free">Free · Local</span>
+            </button>
+          </div>
+
+          <div class="hub-cell">
+            <button class="hub-node" data-node="hub" aria-pressed="true" id="hubBtn">
+              <span class="h-name">CLAUDE</span>
+              <span class="h-role">The hub</span>
+              <span class="h-sub">The only agent plugged into everything. Routes all traffic, runs the automations, writes the build specs.</span>
+            </button>
+          </div>
+
+          <div class="col systems">
+            <div class="col-label">Systems of record —</div>
+            <button class="node" data-node="gmail" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Gmail</span><span class="n-tag">The bus</span></span>
+              <span class="n-sub">The shared inbox the AI tasks write to and the hub reads. It’s how they “talk” to each other.</span>
+              <span class="n-status live">● Connected</span>
+            </button>
+            <button class="node" data-node="ghl" aria-pressed="false">
+              <span class="n-top"><span class="n-name">HighLevel</span><span class="n-tag">System of record</span></span>
+              <span class="n-sub">Where every lead lands: 92 prospects backfilled, tagged by company, trade, and offer.</span>
+              <span class="n-status live">● Connected</span>
+            </button>
+            <button class="node" data-node="figma" aria-pressed="false">
+              <span class="n-top"><span class="n-name">Figma</span><span class="n-tag">Mockups</span></span>
+              <span class="n-sub">Free mockups for the $750 first-site offer — and where the original drawing of this map lives.</span>
+              <span class="n-status live">● Connected</span>
+            </button>
+            <button class="node" data-node="push" aria-pressed="false">
+              <span class="n-top"><span class="n-name">iPhone push</span><span class="n-tag">Delivery</span></span>
+              <span class="n-sub">One morning briefing, replies first. The only screen the whole operation has to reach.</span>
+              <span class="n-status live">● Verified</span>
+            </button>
+          </div>
+
+          <div class="rail">
+            <div class="rail-label">— Automation rail · runs on schedule, no human hands</div>
+            <div class="rail-nodes">
+              <button class="node" data-node="ingest" aria-pressed="false">
+                <span class="n-name">Lead ingest</span>
+                <span class="n-when">Daily · ~6:15 AM</span>
+                <span class="n-sub">“LEADS —” emails → GHL contacts, deduped + tagged.</span>
+              </button>
+              <button class="node" data-node="briefing" aria-pressed="false">
+                <span class="n-name">Morning briefing</span>
+                <span class="n-when">Daily · 7:15 AM</span>
+                <span class="n-sub">Overnight results + reply-watch in one push.</span>
+              </button>
+              <button class="node" data-node="radar" aria-pressed="false">
+                <span class="n-name">Follow-up radar</span>
+                <span class="n-when">Daily</span>
+                <span class="n-sub">Reads the contact log; flags who’s gone quiet.</span>
+              </button>
+              <button class="node" data-node="fbsweep" aria-pressed="false">
+                <span class="n-name">Facebook sweep</span>
+                <span class="n-when">Mondays · ~9:15 AM</span>
+                <span class="n-sub">Hunts no-website businesses; drafts openers.</span>
+              </button>
+              <button class="node" data-node="websweep" aria-pressed="false">
+                <span class="n-name">Stale-site sweep</span>
+                <span class="n-when">Biweekly · next Oct 26</span>
+                <span class="n-sub">Finds neglected sites for the $1,500 rebuild.</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">Dashed lines are live connections. Select any node — the spec sheet below redraws itself.</p>
+
+      <div class="spec" id="spec" aria-live="polite">
+        <div class="spec-head">
+          <span class="spec-title" id="specTitle">Claude — the hub</span>
+          <span class="spec-tag" id="specTag">Router · Operator</span>
+        </div>
+        <p class="spec-role" id="specRole"></p>
+        <div class="spec-cols">
+          <div>
+            <h4>How it works</h4>
+            <ul id="specMech"></ul>
+          </div>
+          <div>
+            <h4>Wiring</h4>
+            <div class="io" id="specIo"></div>
+          </div>
+        </div>
+      </div>
+
+      <section class="block">
+        <div class="sec-head"><span class="sec-num">02</span><h2>How a lead travels</h2></div>
+        <p class="sec-note">No AI talks to another AI directly — they pass work through the inbox, and the hub turns it into records. A Signature Air or DCB lead makes the full trip without Joe touching it:</p>
+        <div class="journey">
+          <div class="step"><span class="s-num">STEP 1</span><div class="s-name">ChatGPT task fires</div><div class="s-desc">Scheduled hunt runs on its own clock, one task per company.</div></div>
+          <div class="step"><span class="s-num">STEP 2</span><div class="s-name">Finds &amp; formats leads</div><div class="s-desc">Name, trade, city, phone, why-they-fit, source. Nothing reveals AI involvement.</div></div>
+          <div class="step"><span class="s-num">STEP 3</span><div class="s-name">Emails Gmail</div><div class="s-desc">Subject: “LEADS — SIGNATURE AIR — [date]”. The bus carries it.</div></div>
+          <div class="step"><span class="s-num">STEP 4</span><div class="s-name">6:15 AM ingest</div><div class="s-desc">The hub parses the email before Joe is awake.</div></div>
+          <div class="step"><span class="s-num">STEP 5</span><div class="s-name">GHL contact created</div><div class="s-desc">Deduped, tagged by company + trade, rationale saved as a note.</div></div>
+          <div class="step"><span class="s-num">STEP 6</span><div class="s-name">7:15 AM briefing</div><div class="s-desc">One iPhone push reports what landed. Joe just works the list.</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="sec-head"><span class="sec-num">03</span><h2>Three companies on the board</h2></div>
+        <div class="companies">
+          <article class="company">
+            <span class="c-tag">tag: stonewell</span>
+            <h3>Stonewell Agency</h3>
+            <div class="c-what">MARKETING AGENCY · GHL LOCATION 1</div>
+            <ul>
+              <li>Website redesign — <span class="price">$1,500 flat</span>, 7-day rebuild, pitched on stale-footer neglect</li>
+              <li>First website — <span class="price">$750 flat</span>, 5 days, free mockup first</li>
+              <li>82 live prospects; all 92 backfilled contacts live here, tagged and pitch-ready</li>
+              <li>Fed by the Facebook sweep + stale-site sweep, both auto-syncing</li>
+            </ul>
+          </article>
+          <article class="company">
+            <span class="c-tag">tag: signature-air</span>
+            <h3>Signature Air AZ</h3>
+            <div class="c-what">HVAC · GHL LOCATION 2</div>
+            <ul>
+              <li>Dedicated ChatGPT lead task — apartment &amp; property HVAC service leads</li>
+              <li>First run already landed: Aspendale Scottsdale, Alma Apartments</li>
+              <li>Leads auto-ingested every morning, tagged <span class="mono">signature-air + ai-lead + trade</span></li>
+            </ul>
+          </article>
+          <article class="company">
+            <span class="c-tag">tag: dcb</span>
+            <h3>Detail Custom Builders</h3>
+            <div class="c-what">CONSTRUCTION / REMODELING</div>
+            <ul>
+              <li>Dedicated ChatGPT lead task for construction leads</li>
+              <li>No GHL location of its own yet — leads are tagged <span class="mono">dcb</span> so they stay filterable</li>
+              <li>Same automated path: email → 6:15 ingest → tagged contact → morning briefing</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="sec-head"><span class="sec-num">04</span><h2>The pipeline every partner runs</h2></div>
+        <p class="sec-note">Partnered contractors in HighLevel move through one shared set of stages, whichever partnership pipeline they’re in:</p>
+        <div class="pipe">
+          <span class="stage"><span class="st-n">01</span>New Lead</span><span class="arr">→</span>
+          <span class="stage"><span class="st-n">02</span>Qualified</span><span class="arr">→</span>
+          <span class="stage"><span class="st-n">03</span>Booked Call</span><span class="arr">→</span>
+          <span class="stage"><span class="st-n">04</span>Client</span><span class="arr">→</span>
+          <span class="stage"><span class="st-n">05</span>Paid Job</span>
+          <span class="stage dead">Disqualified — exit at any stage</span>
+        </div>
+        <div class="pipe-names">
+          <span>HVAC Performance Partnership</span><span>Painting Company Owners</span><span>Garage Door Performance Partnership</span><span>Permanent Lighting Performance Partnership</span><span>Marketing Pipeline</span><span>Stonewell Growth Pipeline</span>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="sec-head"><span class="sec-num">05</span><h2>The tag scheme — how 92+ contacts stay findable</h2></div>
+        <p class="sec-note">Every contact in HighLevel carries three layers of tags, applied automatically by the sweeps and the ingest. Filter any slice: all restaurants, every HVAC lead, all Tier-1 rebuild targets.</p>
+        <div class="tags">
+          <div class="tag-group"><span class="tg-label">Company</span><span class="tag-chip">stonewell</span><span class="tag-chip">signature-air</span><span class="tag-chip">dcb</span></div>
+          <span class="tag-plus">+</span>
+          <div class="tag-group"><span class="tg-label">Vertical / trade</span><span class="tag-chip">restaurant</span><span class="tag-chip">plumbing</span><span class="tag-chip">hvac</span><span class="tag-chip">pizza</span><span class="tag-chip">mexican</span><span class="tag-chip">…</span></div>
+          <span class="tag-plus">+</span>
+          <div class="tag-group"><span class="tg-label">Offer / tier</span><span class="tag-chip">website-prospect</span><span class="tag-chip">tier-1</span><span class="tag-chip">tier-2</span><span class="tag-chip">ai-lead</span></div>
+        </div>
+      </section>
+
+      <footer>
+        <p>SNAPSHOT — Drawn Oct 12, 2026, from the live operation. Automations run on schedule; this sheet is the map, not the machine.</p>
+        <p>HUB: CLAUDE · BUS: GMAIL · RECORD: HIGHLEVEL</p>
+      </footer>
+    </div>
+
+    <script>
+      var SPECS = {
+        hub: {
+          title: "Claude — the hub", tag: "Router · Operator",
+          role: "The center of the web. Every other AI reports to the inbox; Claude is the one connected to all the tools, so it does the acting — creating contacts, drafting outreach, updating the board, writing build specs.",
+          mech: [
+            "Runs every scheduled automation on the rail below (ingest, briefing, radar, both sweeps)",
+            "Reads the other AIs’ emailed results each morning and folds them into one briefing",
+            "Creates and tags HighLevel contacts for every sweep and ingest — deduped by phone/email",
+            "Writes the build specs that Antigravity’s agents execute locally",
+            "Keeps the operation map current — this wireframe included"
+          ],
+          io: "<b>In</b>Gmail results from ChatGPT + Claude tasks · Joe’s instructions in chat<b>Out</b>GHL contacts &amp; notes · drafted emails &amp; openers · the 7:15 AM briefing · build specs"
+        },
+        chatgpt: {
+          title: "ChatGPT", tag: "Lead scout",
+          role: "Runs two scheduled lead-finding tasks — one for Signature Air, one for Detail Custom Builders — and emails each haul to Gmail in a strict format the 6:15 AM ingest can parse.",
+          mech: [
+            "Task 1: Signature Air — HVAC service leads (first run: Aspendale Scottsdale, Alma Apartments)",
+            "Task 2: DCB — construction / remodeling leads",
+            "Before each run, checks the last 7 days of “LEADS —” emails so it never reports a duplicate",
+            "Stealth rule baked into the task: no output ever reveals AI involvement; outreach drafts read human",
+            "Research only — it never contacts a prospect itself"
+          ],
+          io: "<b>In</b>Its standing lead criteria, one task per company<b>Out</b>One formatted email per run → Gmail → auto-ingest"
+        },
+        claudeapp: {
+          title: "Claude (app)", tag: "Research tasks",
+          role: "A second set of scheduled hands. Its tasks email results to the same Gmail bus, so their output lands in the morning briefing next to everything else.",
+          mech: [
+            "Scheduled tasks run on their own clocks, email results to Gmail",
+            "The hub reads those emails and attributes them in the briefing",
+            "Pairs with the hub: quick-turn drafts and second opinions on research"
+          ],
+          io: "<b>In</b>Scheduled task prompts<b>Out</b>Emailed results → Gmail → briefing"
+        },
+        grok: {
+          title: "Grok", tag: "Real-time monitor · Free tier",
+          role: "The stack’s live sensor. On the free tier it watches X and real-time chatter — the thing the slower, deeper tools can’t do.",
+          mech: [
+            "Real-time / X monitoring for mentions, market chatter, and breaking local news",
+            "Fast gut-checks the hub can route into research or outreach angles",
+            "Free tier — no subscription line item"
+          ],
+          io: "<b>In</b>Prompts from Joe or the hub<b>Out</b>Live reads, reported back in chat / email"
+        },
+        perplexity: {
+          title: "Perplexity", tag: "Deep research · Free tier",
+          role: "The researcher with footnotes. Deep, cited dives on a prospect or a competitor before anyone spends outreach on them.",
+          mech: [
+            "Deep research with sources cited — claims can be checked, not just trusted",
+            "Prospect intel: who they are, how they’re positioned, where the gaps are",
+            "Competitor intel feeding pitch hooks for the website offers",
+            "Free tier — no subscription line item"
+          ],
+          io: "<b>In</b>A prospect or competitor name<b>Out</b>Cited briefs the hub turns into pitch hooks"
+        },
+        antigravity: {
+          title: "Antigravity", tag: "Build crew · Free · Local",
+          role: "The fulfillment arm. Parallel build agents running locally on Joe’s machine (free Individual plan) that turn the hub’s build specs into finished client websites.",
+          mech: [
+            "Runs on Joe’s machine — client work never leaves the shop",
+            "Parallel agents: several site builds can move at once",
+            "Executes to spec: the hub writes the brief, Antigravity builds it",
+            "This is how a 7-day $1,500 rebuild (or 5-day $750 site) stays feasible solo"
+          ],
+          io: "<b>In</b>Build specs written by the hub<b>Out</b>Finished client sites, ready to ship"
+        },
+        gmail: {
+          title: "Gmail", tag: "The shared bus",
+          role: "There is no direct line between AIs — so they talk through this inbox. Every scheduled task emails its results here, and every reader (the hub, and the other AIs’ tasks) checks here first.",
+          mech: [
+            "ChatGPT and Claude task results arrive as structured emails (“LEADS — …”)",
+            "The 6:15 AM ingest parses lead emails into HighLevel contacts",
+            "The 7:15 AM briefing reads overnight mail and reports it in one push",
+            "Prospect replies land here too — the briefing surfaces them first, under “Needs you today”"
+          ],
+          io: "<b>In</b>Task results from every AI · prospect replies<b>Out</b>Parsed leads → GHL · reply alerts → briefing"
+        },
+        ghl: {
+          title: "HighLevel (GHL)", tag: "System of record",
+          role: "The single source of truth for leads. If it isn’t in HighLevel, it didn’t happen. Two locations — Stonewell Agency and Signature Air AZ — hold every prospect the machine finds.",
+          mech: [
+            "92 prospects backfilled as contacts (21 name-only, flagged for enrichment)",
+            "Every contact tagged three ways: company + vertical/trade + offer/tier",
+            "Stonewell pipelines: four partnership pipelines + Marketing + Stonewell Growth",
+            "Sweeps and ingest create contacts automatically — deduped by phone/email",
+            "The briefing also watches GHL conversations, so replies surface even off-email"
+          ],
+          io: "<b>In</b>Auto-created contacts from sweeps + ingest<b>Out</b>Pipelines Joe works · reply-watch for the briefing"
+        },
+        figma: {
+          title: "Figma", tag: "Mockups &amp; wireframes",
+          role: "Where visuals get drawn: free mockups that open the $750 first-site pitch, and the original FigJam board this wireframe was redrawn from.",
+          mech: [
+            "Free mockup first — the hook for businesses with no website",
+            "The “Joes AI Operation” FigJam board maps the whole system (section 1: the agent web)",
+            "Board edits happen in place — the three stems carry the company split, lead tasks, and reply-watch"
+          ],
+          io: "<b>In</b>Prospect name + trade from the hub<b>Out</b>Mockups for pitches · the operation board"
+        },
+        push: {
+          title: "iPhone push", tag: "Delivery",
+          role: "The finish line. Everything the operation does overnight compresses into one 7:15 AM push — verified working — so Joe starts the day with a list, not a dashboard to check.",
+          mech: [
+            "One push per morning: overnight agent results, ingested leads, radar flags",
+            "Prospect replies ride at the top under “Needs you today”",
+            "Requires Muse app notifications on — tested and confirmed received"
+          ],
+          io: "<b>In</b>The compiled morning briefing<b>Out</b>Joe’s first action list of the day"
+        },
+        ingest: {
+          title: "Lead-email ingest", tag: "Automation · Daily ~6:15 AM",
+          role: "Parses the night’s “LEADS —” emails from the ChatGPT tasks and files every lead into HighLevel before the briefing goes out.",
+          mech: [
+            "Reads new “LEADS —” emails from Gmail",
+            "Creates GHL contacts in Stonewell Agency, deduped by phone/name",
+            "Tags: company (signature-air / dcb) + ai-lead + trade; fit rationale + source saved as a note",
+            "Each run is logged, and the 7:15 briefing reports how many landed"
+          ],
+          io: "<b>In</b>“LEADS —” emails<b>Out</b>Tagged GHL contacts · ingest counts for the briefing"
+        },
+        briefing: {
+          title: "Morning briefing", tag: "Automation · Daily 7:15 AM",
+          role: "The daily roll-up: everything the machine did overnight — agent results, newly ingested leads, follow-up flags — compiled into a single iPhone push.",
+          mech: [
+            "Compiles overnight results from Claude’s automations + Gmail from the other AIs",
+            "Watches Gmail and HighLevel conversations for prospect replies",
+            "Replies surface first, under “Needs you today”, with the gist of what they said",
+            "Reports the 6:15 ingest count so Joe knows what’s new in GHL"
+          ],
+          io: "<b>In</b>Overnight automation results · Gmail · GHL conversations<b>Out</b>One iPhone push at 7:15 AM"
+        },
+        radar: {
+          title: "Follow-up radar", tag: "Automation · Daily",
+          role: "Nobody goes cold quietly. The radar reads the contact log daily and flags who’s due a follow-up, so threads don’t die of neglect.",
+          mech: [
+            "Reads the contact log every day",
+            "Flags prospects whose follow-up window has arrived",
+            "Joe reports each contact he makes in chat — the radar takes it from there",
+            "Flags ride in the morning briefing"
+          ],
+          io: "<b>In</b>Contact log + Joe’s chat reports<b>Out</b>Follow-up flags in the briefing"
+        },
+        fbsweep: {
+          title: "Facebook prospect sweep", tag: "Automation · Mondays ~9:15 AM",
+          role: "Hunts local Facebook groups for businesses with no website — the $750 first-site offer — and drafts their openers automatically.",
+          mech: [
+            "Flipped to no-site hunting 2026-10-12 (stale-footer hunting was low-yield on Facebook)",
+            "Only surfaces verified prospects — a quiet week reports nothing rather than padding the list",
+            "Auto-drafts a personalized call/DM opener for each find, naming a real ranking competitor",
+            "Every find syncs to GHL: tagged stonewell + vertical + offer, deduped"
+          ],
+          io: "<b>In</b>Local FB group posts, weekly<b>Out</b>Drafted openers · tagged GHL contacts (Stonewell)"
+        },
+        websweep: {
+          title: "Stale-site web sweep", tag: "Automation · Biweekly · Next Oct 26",
+          role: "The redesign hunter: scans the web for business sites showing real neglect — the stale copyright footer is the tell — to feed the $1,500 rebuild pipeline.",
+          mech: [
+            "Targets sites with a stale footer (≈2016 or earlier = Tier 1; 2017–2020 or severe neglect = Tier 2)",
+            "A current copyright year disqualifies — that site is being maintained",
+            "Each prospect gets a pre-filled pitch hook from what the neglect shows",
+            "Finds sync to GHL automatically, tagged with offer + tier"
+          ],
+          io: "<b>In</b>The open web, every two weeks<b>Out</b>Tiered prospects + pitch hooks · tagged GHL contacts"
+        }
+      };
+
+      var specTitle = document.getElementById('specTitle');
+      var specTag = document.getElementById('specTag');
+      var specRole = document.getElementById('specRole');
+      var specMech = document.getElementById('specMech');
+      var specIo = document.getElementById('specIo');
+      var nodes = Array.prototype.slice.call(document.querySelectorAll('[data-node]'));
+      var current = 'hub';
+
+      function select(id, focusSpec) {
+        var s = SPECS[id];
+        if (!s) return;
+        current = id;
+        nodes.forEach(function (n) { n.setAttribute('aria-pressed', n.getAttribute('data-node') === id ? 'true' : 'false'); });
+        specTitle.textContent = s.title;
+        specTag.innerHTML = s.tag;
+        specRole.textContent = s.role;
+        specMech.innerHTML = s.mech.map(function (m) { return '<li>' + m + '</li>'; }).join('');
+        specIo.innerHTML = s.io;
+        drawWires();
+        if (focusSpec) {
+          document.getElementById('spec').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
+      nodes.forEach(function (n) {
+        n.addEventListener('click', function () { select(n.getAttribute('data-node'), false); });
+      });
+
+      /* ---------- wires ---------- */
+      var PAIRS = [
+        ['hub', 'chatgpt'], ['hub', 'claudeapp'], ['hub', 'grok'], ['hub', 'perplexity'], ['hub', 'antigravity'],
+        ['hub', 'gmail'], ['hub', 'ghl'], ['hub', 'figma'], ['hub', 'push'],
+        ['gmail', 'ingest'], ['ingest', 'ghl'], ['hub', 'briefing'], ['briefing', 'push'], ['hub', 'radar'], ['hub', 'fbsweep'], ['hub', 'websweep']
+      ];
+      var svg = document.getElementById('wires');
+      var map = document.getElementById('map');
+      function boxOf(el) {
+        var mr = map.getBoundingClientRect();
+        var r = el.getBoundingClientRect();
+        return { x: r.left - mr.left + r.width / 2, y: r.top - mr.top + r.height / 2, hw: r.width / 2, hh: r.height / 2 };
+      }
+      /* Point where the line from box C toward (tx,ty) exits C's rectangle (+pad). */
+      function clipExit(C, tx, ty, pad) {
+        var dx = tx - C.x, dy = ty - C.y;
+        if (dx === 0 && dy === 0) return { x: C.x, y: C.y };
+        var t = 1;
+        if (dx !== 0) t = Math.min(t, (C.hw + pad) / Math.abs(dx));
+        if (dy !== 0) t = Math.min(t, (C.hh + pad) / Math.abs(dy));
+        return { x: C.x + dx * t, y: C.y + dy * t };
+      }
+      function drawWires() {
+        if (!svg || window.getComputedStyle(svg).display === 'none') return;
+        var w = map.offsetWidth, h = map.offsetHeight;
+        svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+        var html = '';
+        PAIRS.forEach(function (p) {
+          var a = document.querySelector('[data-node="' + p[0] + '"]');
+          var b = document.querySelector('[data-node="' + p[1] + '"]');
+          if (!a || !b) return;
+          var boxA = boxOf(a), boxB = boxOf(b);
+          var A = clipExit(boxA, boxB.x, boxB.y, 5);
+          var B = clipExit(boxB, boxA.x, boxA.y, 5);
+          var mx = (A.x + B.x) / 2;
+          var hot = (current === p[0] || current === p[1]) ? ' class="hot"' : '';
+          html += '<path' + hot + ' d="M ' + A.x + ' ' + A.y + ' C ' + mx + ' ' + A.y + ', ' + mx + ' ' + B.y + ', ' + B.x + ' ' + B.y + '"/>';
+        });
+        svg.innerHTML = html;
+      }
+      var resizeTimer;
+      window.addEventListener('resize', function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(drawWires, 120); });
+      window.addEventListener('load', drawWires);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawWires);
+
+      select('hub', false);
+    </script>
+  </body>
+</html>
